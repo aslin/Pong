@@ -1,198 +1,95 @@
-import java.util.Vector;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.awt.Point;
+
 import java.awt.Graphics2D;
-import java.awt.Color;
-import java.util.Random;
+import java.util.LinkedList;
+import java.util.Vector;
 
 public class GamePad implements Drawable
 {
-    private int rows;
-    private int cols;
-    private int x;
-    private int y;
     private UserInterface ui;
-    private Color color;
-    private LinkedList<Square> squares;
-    private Block currBlock;
-    private Block nextBlock;
-    private Square[][] deadSquares;
-    private GameData gamedata;
-    private boolean gridOn;
+    private int xSize;
+    private int ySize;
+    private Block player1;
+    private Block player2;
+    private Ball ball;  
+    private Input input;
+    private Computer cpu;
     
-    public GamePad(int rows, int cols, UserInterface ui,  GameData gamedata)
+    public GamePad(UserInterface ui)
     {
-        this.rows = rows;
-        this.cols = cols;
         this.ui = ui;
-        y = 40;
-        x = 40;
-        color = Color.black;
-        squares = new LinkedList<Square>();
-        this.currBlock = genBlock();
-        currBlock.moveTo(x+(GSettings.size)*4, y);
-        this.nextBlock = genBlock();
-        deadSquares = new Square[rows][cols];
-        this.gamedata = gamedata;
-        gridOn = false;
-
+        this.xSize = ui.getXSize();
+        this.ySize = ui.getYSize();
+        player1 = new Block(20,20,GSettings.getColor("white"));
+        player2 = new Block(470,100,GSettings.getColor("white"));
+        ball = new Ball(100,300,GSettings.getColor("white"));
+        Thread computer = new Thread(cpu = new Computer(player2, ball, this));
+        Thread player = new Thread(input = new Input(ui.getFrame(), this, player1));
+        computer.start();
+        player.start();
+        
     }
     public void draw(Graphics2D g)
     {
-        g.setColor(color);
-        if(gridOn){
-            for(int i = 0; i <= rows; i++)
-                g.drawLine(x,y+(i*GSettings.size), x+(cols*GSettings.size),y+(i*GSettings.size));
-            for(int j = 0; j <= cols; j++)
-                g.drawLine(x+(j*GSettings.size), y,x+(j*GSettings.size), y+(rows*GSettings.size));
-        }else{
-            g.drawLine(x,y,x,y+(GSettings.size*rows));
-            g.drawLine(x+(GSettings.size*cols),y,x+(GSettings.size*cols),y+(GSettings.size*rows));
-            g.drawLine(x,y,x+(GSettings.size*cols),y);
-            g.drawLine(x,y+(GSettings.size*rows),x+(GSettings.size*cols),y+(GSettings.size*rows));
+    }
+    public void redrawScreen()
+    {
+        Vector<Drawable> vec = new Vector<Drawable>();
+        vec.add(player1);
+        vec.add(player2);
+        vec.add(ball);
+        vec.add(this);
+        ui.redrawList(vec);
+    }
+    public void update()
+    {
+        ball.move();
+    }
+    public void moveBall()
+    {
+        ball.move();
+        if(checkPaddleHit())
+        {
+            ball.rewind();
+            ball.reverseX();
         }
-        int x2 = x+(GSettings.size*(cols+2));
-        int y2 = y+(GSettings.size*2);
-        int w = 5;
-        int h = 5;
-        g.drawLine(x2,y2,x2+(GSettings.size*w),y2);
-        g.drawLine(x2,y2+(GSettings.size*h),x2+(GSettings.size*w),y2+(GSettings.size*h));
-        g.drawLine(x2,y2,x2,y2+(GSettings.size*h));
-        g.drawLine(x2+(GSettings.size*w),y2,x2+(GSettings.size*w),y2+(GSettings.size*h));
-        nextBlock.moveTo(x2+(GSettings.size), y2+(GSettings.size));
-        nextBlock.draw(g);
-        int x3 = x2;
-        int y3 = x2+(GSettings.size*(h));
-        g.drawString("Level: " + gamedata.getLevel(), x3, y3);
-        g.drawString("Score: "+ gamedata.getScore(), x3, y3+GSettings.size);
-        g.drawString("Lines: " + gamedata.getLines(), x3, y3+(GSettings.size*2));
-    }
-    public LinkedList<Square> getSquares()
-    {
-        return squares;
-    }
-    public synchronized Block getCurrBlock()
-    {
-        return currBlock;
-    }
-    private synchronized Block genBlock()
-    {
-        Random r = new Random();
-        return new Block(0,0, r.nextInt(7));
-    }
-    
-    public synchronized void redraw()
-    {
-        Vector<Drawable> tmp = new Vector<Drawable>();
-        tmp.addAll(squares);
-        tmp.add(currBlock);
-        tmp.add(this);
-        ui.redrawList(tmp);
-    }
-    public synchronized void update()
-    {   
-        if(currBlock == null) 
-            return;
-        moveCurrBlock(0, GSettings.size);
-    }
-    public synchronized void moveCurrBlock(int deltaX, int deltaY)
-    {
-        if(currBlock == null)
-            return;
-        currBlock.move(deltaX, deltaY);
-        if(checkWallHit())
-            currBlock.move(-deltaX, -deltaY);
-        else if(checkBlockHit()){
-            currBlock.move(-deltaX, -deltaY);
-            if(deltaY > 0) // dvs blocket har förflyttats nedåt på spelplanen
-                handleBottomHit();
+        if(checkBallWallHitHor()){
+            ball.rewind();
+            ball.reverseY();
+        }else if(checkBallWallHitVer()){
+            ball.rewind();
+            ball.reverseX();
         }
     }
-    public synchronized void rotateCurrBlock()
+    public void moveUp(Block player)
     {
-        if(currBlock == null)
-            return;
-        currBlock.rotate(true);
-        if(checkWallHit())
-            currBlock.rotate(false);
-        else if(checkBlockHit()){
-            currBlock.rotate(false);
-        }
+        player.moveUp();
+        if(player.getY() < 0)
+            player.moveDown();
     }
-    public synchronized boolean checkWallHit()
+    public void moveDown(Block player)
     {
-        if(currBlock == null)
-            return false;
-        for(Square square : currBlock.getSquares()){
-            if(square.getX() < x || (square.getX()+GSettings.size) > x+(cols*GSettings.size))
-                return true;
-        }
-        return false;
+        player.moveDown();
+        if(ySize < player.getY()+player.getH())
+            player.moveUp();
     }
-    public synchronized boolean checkBlockHit()
+    public boolean checkBallWallHitHor()
     {
-        if(currBlock == null)
-            return false;
-        for(Square blockSquare : currBlock.getSquares()){
-            if(blockSquare.getY() > y+((rows-1)*GSettings.size))
-                return true;
-            for(Square deadSquare : squares){
-                if(blockSquare.intersects(deadSquare))
-                    return true;
-            }
-        }
-        return false;
+        return ball.getY() < 0 || ySize < ball.getY()+ball.getH();
     }
-    private void handleBottomHit()
+    public boolean checkBallWallHitVer()
     {
-        for(Square square : currBlock.getSquares()){
-            int row = (square.getY()-y)/GSettings.size;
-            int col = (square.getX()-x)/GSettings.size;
-            deadSquares[row][col] = square;
-        }
-        squares.addAll(currBlock.getSquares());
-        checkFullRow();
-        currBlock = nextBlock;
-        nextBlock = genBlock();
-        currBlock.moveTo(x+(GSettings.size)*4, y);
+        return ball.getX() < 0 || xSize < ball.getX()+ball.getW();
     }
-    private void checkFullRow()
+    public boolean checkPaddleHit()
     {
-        boolean[] fullRows = new boolean[rows];
-        int lineCnt = 0;
-        for(int row = 0; row < rows; row++){
-            int cnt = 0;
-            for(int col = 0; col < cols; col++){
-                if(deadSquares[row][col] == null)
-                    break;
-                cnt++;
-            }
-            if(cnt == cols){
-                fullRows[row] = true;
-                lineCnt++;
-            }
-        }
-        if(lineCnt == 0)
-            return;
-        gamedata.increaseScore(lineCnt);
-        for(int i = 0; i < rows; i++){
-            if(fullRows[i]){
-                for(int col = 0; col < cols; col++){
-                    squares.remove(deadSquares[i][col]);
-                    deadSquares[i][col] = null;
-                }
-                for(int j = i-1;  j > 0; j--){
-                    for(int col = 0; col < cols; col++){
-                        if(deadSquares[j][col] != null){
-                            deadSquares[j][col].move(0,GSettings.size);
-                            deadSquares[j+1][col] = deadSquares[j][col];
-                            deadSquares[j][col] = null;
-                        }
-                    }
-                }
-            }
-        }
-        
+        return player1.getBoundary().intersects(ball.getBoundary()) || player2.getBoundary().intersects(ball.getBoundary());
+    }
+    public int getXSize()
+    {
+        return xSize;
+    }
+    public int getYSize()
+    {
+        return ySize;
     }
 }

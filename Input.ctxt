@@ -1,5 +1,5 @@
 #BlueJ class context
-comment0.params=frame\ gamepad
-comment0.target=Input(JFrame,\ GamePad)
+comment0.params=frame\ gamepad\ player1
+comment0.target=Input(JFrame,\ GamePad,\ Block)
 comment1.target=void\ run()
 numComments=2

@@ -34,6 +34,7 @@ public class UserInterface
         this.ySize = ySize;
         frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setResizable(false);
         canvas = new CanvasPane();
         frame.setContentPane(canvas);
         frame.setTitle(title);
@@ -94,11 +95,11 @@ public class UserInterface
     {
         return graphic;
     }
-    public int getxSize()
+    public int getXSize()
     {
         return xSize;
     }
-    public int getySize()
+    public int getYSize()
     {
         return ySize;
     }  

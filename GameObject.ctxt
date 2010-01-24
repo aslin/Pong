@@ -1,0 +1,9 @@
+#BlueJ class context
+comment0.params=x\ y\ w\ h\ color
+comment0.target=GameObject(int,\ int,\ int,\ int,\ Color)
+comment1.target=int\ getX()
+comment2.target=int\ getY()
+comment3.target=int\ getW()
+comment4.target=int\ getH()
+comment5.target=Rectangle\ getBoundary()
+numComments=6

@@ -2,7 +2,7 @@
 comment0.target=UserInterface()
 comment1.params=title\ xSize\ ySize\ bgColor
 comment1.target=UserInterface(String,\ int,\ int,\ Color)
-comment10.target=int\ getySize()
+comment10.target=int\ getYSize()
 comment11.target=void\ erase()
 comment2.params=visible
 comment2.target=void\ setVisible(boolean)
@@ -15,5 +15,5 @@ comment5.target=void\ redrawList(List<Drawable>)
 comment6.target=void\ draw()
 comment7.target=JFrame\ getFrame()
 comment8.target=Graphics2D\ getGraphics()
-comment9.target=int\ getxSize()
+comment9.target=int\ getXSize()
 numComments=12
